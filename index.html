@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Chain Tracker (RU)</title>
+    <style>
+        body { font-family: sans-serif; background: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
+        .card { background: #161d2f; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #26314d; }
+        h1 { text-align: center; font-size: 22px; color: #38bdf8; margin-top: 0; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; }
+        .tab { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #94a3b8; font-weight: bold; cursor: pointer; }
+        .tab.active { background: #0284c7; color: #fff; }
+        .tab.active-sol { background: #7e22ce; color: #fff; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; margin-bottom: 12px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; background: #0284c7; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .test-btn { width: 100%; padding: 8px; margin-top: 8px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #cbd5e1; font-size: 12px; cursor: pointer; }
+        .res { margin-top: 20px; padding: 15px; background: #0f172a; border-radius: 10px; display: none; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .err { color: #f87171; text-align: center; margin-top: 12px; display: none; font-size: 13px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>🚀 TON & Solana Tracker</h1>
+    <div class="tabs">
+        <button id="bTon" class="tab active" onclick="setNet('ton')">💎 TON</button>
+        <button id="bSol" class="tab" onclick="setNet('sol')">👻 Solana / Phantom</button>
+    </div>
+    <input type="text" id="addr" placeholder="Адрес TON (UQ... или EQ...)">
+    <button class="btn" id="subBtn" onclick="run()">Проверить баланс</button>
+    <button class="test-btn" onclick="demo()">Вставить тестовый кошелек</button>
+    <div id="err" class="err"></div>
+    <div id="res" class="res">
+        <div class="row"><span>Баланс:</span><b id="val" style="color:#4ade80">0</b></div>
+        <div class="row"><span>В долларах:</span><span id="usd">$0</span></div>
+        <div class="row"><span>В рублях:</span><span id="rub">0 ₽</span></div>
+    </div>
+</div>
+<script>
+    let net = 'ton';
+    function setNet(n) {
+        net = n;
+        document.getElementById('bTon').className = n === 'ton' ? 'tab active' : 'tab';
+        document.getElementById('bSol').className = n === 'sol' ? 'tab active-sol' : 'tab';
+        document.getElementById('addr').placeholder = n === 'ton' ? 'Адрес TON (UQ... или EQ...)' : 'Адрес Solana / Phantom';
+        document.getElementById('res').style.display = 'none';
+        document.getElementById('err').style.display = 'none';
+    }
+    function demo() {
+        document.getElementById('addr').value = net === 'ton' 
+            ? 'EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N' 
+            : '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM';
+    }
+
+    async function getSolBalance(address) {
+        // 1. Пробуем через публичный REST API Blockdaemon / OnFinality / Solana
+        const endpoints = [
+            {
+                url: 'https://onfinality.io',
+                opts: { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jsonrpc:'2.0', id:1, method:'getBalance', params:[address]}) },
+                parse: d => d.result.value / 1e9
+            },
+            {
+                url: 'https://shyft.to?api_key=free',
+                opts: { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jsonrpc:'2.0', id:1, method:'getBalance', params:[address]}) },
+                parse: d => d.result.value / 1e9
+            },
+            {
+                url: `https://solscan.io{address}`,
+                opts: { method: 'GET' },
+                parse: d => Number(d.data.lamports) / 1e9
+            }
+        ];
+
+        let lastErr = '';
+        for (let ep of endpoints) {
+            try {
+                const resp = await fetch(ep.url, ep.opts);
+                const data = await resp.json();
+                const val = ep.parse(data);
+                if (!isNaN(val)) return val;
+            } catch (e) {
+                lastErr = e.message;
+            }
+        }
+        throw new Error('Браузер заблокировал прямой запрос с рабочего стола (' + lastErr + '). Запусти файл через Live Server в VS Code или залей на GitHub Pages!');
+    }
+
+    async function getPrices(sym) {
+        try {
+            const resp = await fetch(`https://cryptocompare.com{sym}&tsyms=USD,RUB`);
+            const data = await resp.json();
+            if (data.USD) return { usd: data.USD, rub: data.RUB || data.USD * 95 };
+        } catch (e) {}
+        return sym === 'TON' ? { usd: 5.5, rub: 520 } : { usd: 180, rub: 17000 };
+    }
+
+    async function run() {
+        const a = document.getElementById('addr').value.trim();
+        const err = document.getElementById('err'), res = document.getElementById('res'), btn = document.getElementById('subBtn');
+        err.style.display = 'none'; res.style.display = 'none';
+        if (!a) { err.innerText = 'Введи адрес!'; err.style.display = 'block'; return; }
+        
+        btn.innerText = 'Загрузка...';
+        try {
+            let bal = 0, sym = 'TON';
+            if (net === 'ton') {
+                const resp = await fetch(`https://tonapi.io{a}`);
+                const r = await resp.json();
+                if (r.error || typeof r.balance === 'undefined') throw new Error('Неверный адрес TON');
+                bal = Number(r.balance) / 1e9;
+            } else {
+                bal = await getSolBalance(a);
+                sym = 'SOL';
+            }
+
+            const p = await getPrices(sym);
+            document.getElementById('val').innerText = bal.toFixed(4) + ' ' + sym;
+            document.getElementById('usd').innerText = '$' + (bal * p.usd).toFixed(2);
+            document.getElementById('rub').innerText = Math.round(bal * p.rub) + ' ₽';
+            res.style.display = 'block';
+        } catch(e) { 
+            err.innerText = e.message; 
+            err.style.display = 'block'; 
+        }
+        btn.innerText = 'Проверить баланс';
+    }
+</script>
+</body>
+</html>
