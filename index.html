@@ -53,36 +53,33 @@
             : '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM';
     }
 
+    // Проверка Solana через открытые REST API без регистрации и ключей
     async function getSolBalance(address) {
-        // Список рабочих RPC-узлов с поддержкой CORS для GitHub Pages
-        const rpcs = [
-            'https://publicnode.com',
-            'https://solana.com',
-            'https://drpc.org',
-            'https://ankr.com'
+        const sources = [
+            async () => {
+                const r = await fetch(`https://blockchair.com{address}`);
+                const d = await r.json();
+                return d.data[address].address.balance / 1e9;
+            },
+            async () => {
+                const r = await fetch(`https://solana.fm{address}`);
+                const d = await r.json();
+                return d.result.data.lamports / 1e9;
+            },
+            async () => {
+                const r = await fetch(`https://solscan.io{address}`);
+                const d = await r.json();
+                return d.lamports / 1e9;
+            }
         ];
 
-        for (let url of rpcs) {
+        for (let getBal of sources) {
             try {
-                const resp = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        jsonrpc: '2.0',
-                        id: 1,
-                        method: 'getBalance',
-                        params: [address]
-                    })
-                });
-                const data = await resp.json();
-                if (data && data.result && typeof data.result.value === 'number') {
-                    return data.result.value / 1e9;
-                }
-            } catch (e) {
-                // Идем к следующему серверу
-            }
+                const bal = await getBal();
+                if (typeof bal === 'number' && !isNaN(bal)) return bal;
+            } catch (e) {}
         }
-        throw new Error('Серверы Solana сейчас перегружены или недоступны с твоего провайдера. Попробуй через 10 секунд.');
+        throw new Error('Не удалось загрузить данные Solana без ключа (попробуй TON или сделай бесплатный ключ на dev.helius.xyz)');
     }
 
     async function getPrices(sym) {
