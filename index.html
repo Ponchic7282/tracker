@@ -3,133 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TON & Ethereum Tracker v3</title>
+    <title>Crypto Simulator & Radar V5</title>
     <style>
-        body { font-family: sans-serif; background: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
-        .card { background: #161d2f; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #26314d; }
-        h1 { text-align: center; font-size: 22px; color: #38bdf8; margin-top: 0; }
-        .tabs { display: flex; gap: 8px; margin-bottom: 15px; }
-        .tab { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #94a3b8; font-weight: bold; cursor: pointer; }
-        .tab.active { background: #0284c7; color: #fff; }
-        .tab.active-eth { background: #4f46e5; color: #fff; }
-        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; margin-bottom: 12px; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; background: #0284c7; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .test-btn { width: 100%; padding: 8px; margin-top: 8px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #cbd5e1; font-size: 12px; cursor: pointer; }
-        .res { margin-top: 20px; padding: 15px; background: #0f172a; border-radius: 10px; display: none; }
-        .row { display: flex; justify-content: space-between; margin-bottom: 8px; }
-        .err { color: #f87171; text-align: center; margin-top: 12px; display: none; font-size: 13px; line-height: 1.4; }
+        body { font-family: 'Segoe UI', sans-serif; background: #090d16; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
+        .app { background: #131a2a; padding: 22px; border-radius: 18px; width: 100%; max-width: 480px; border: 1px solid #23304d; box-shadow: 0 15px 35px rgba(0,0,0,0.6); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+        .header h1 { font-size: 20px; margin: 0; color: #38bdf8; }
+        .badge { background: #1e293b; color: #4ade80; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; border: 1px solid #334155; }
+        
+        /* Баланс игрока */
+        .wallet-card { background: linear-gradient(135deg, #1e293b, #0f172a); padding: 16px; border-radius: 14px; border: 1px solid #334155; margin-bottom: 16px; }
+        .w-label { font-size: 12px; color: #94a3b8; }
+        .w-total { font-size: 28px; font-weight: bold; color: #fff; margin: 4px 0; }
+        .w-sub { font-size: 13px; color: #cbd5e1; display: flex; justify-content: space-between; }
+
+        /* Выбор монеты */
+        .coins { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 15px; }
+        .coin-btn { background: #0f172a; border: 1px solid #26314d; color: #94a3b8; padding: 8px 4px; border-radius: 10px; cursor: pointer; text-align: center; font-weight: bold; font-size: 13px; }
+        .coin-btn.active { background: #0284c7; color: #fff; border-color: #38bdf8; }
+
+        /* График и цена */
+        .chart-box { background: #0b0f19; border-radius: 12px; padding: 14px; border: 1px solid #1e293b; margin-bottom: 16px; }
+        .price-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+        .cur-price { font-size: 22px; font-weight: bold; }
+        .change { font-size: 13px; font-weight: bold; padding: 2px 8px; border-radius: 6px; }
+        .up { color: #4ade80; background: rgba(74, 222, 128, 0.15); }
+        .down { color: #f87171; background: rgba(248, 113, 113, 0.15); }
+        canvas { width: 100%; height: 110px; display: block; }
+
+        /* Кнопки торговли */
+        .trade-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .btn-buy { background: #16a34a; color: #fff; border: none; padding: 13px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
+        .btn-buy:active { transform: scale(0.98); }
+        .btn-sell { background: #dc2626; color: #fff; border: none; padding: 13px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
+        .btn-sell:active { transform: scale(0.98); }
+        .reset-btn { width: 100%; background: transparent; border: 1px solid #334155; color: #64748b; padding: 7px; border-radius: 8px; font-size: 12px; cursor: pointer; }
+        .msg { text-align: center; font-size: 13px; height: 18px; margin-bottom: 8px; color: #38bdf8; }
     </style>
 </head>
 <body>
-<div class="card">
-    <h1>🚀 TON & Ethereum Tracker v3</h1>
-    <div class="tabs">
-        <button id="bTon" class="tab active" onclick="setNet('ton')">💎 TON</button>
-        <button id="bEth" class="tab" onclick="setNet('eth')">🦊 Ethereum</button>
+<div class="app">
+    <div class="header">
+        <h1>⚡ Crypto Trader V5</h1>
+        <span class="badge">LIVE РЫНОК</span>
     </div>
-    <input type="text" id="addr" placeholder="Адрес TON (UQ... или EQ...)">
-    <button class="btn" id="subBtn" onclick="run()">Проверить баланс</button>
-    <button class="test-btn" onclick="demo()">Вставить тестовый кошелек «кита»</button>
-    <div id="err" class="err"></div>
-    <div id="res" class="res">
-        <div class="row"><span>Баланс:</span><b id="val" style="color:#4ade80">0</b></div>
-        <div class="row"><span>В долларах:</span><span id="usd">$0</span></div>
-        <div class="row"><span>В рублях:</span><span id="rub">0 ₽</span></div>
+
+    <div class="wallet-card">
+        <div class="w-label">Общий капитал (Наличные + Монеты)</div>
+        <div class="w-total" id="totalEquity">$1,000.00</div>
+        <div class="w-sub">
+            <span>Свободно: <b id="cashBal" style="color:#4ade80">$1,000.00</b></span>
+            <span>В монете: <b id="coinHold">0.000</b></span>
+        </div>
     </div>
+
+    <div class="coins">
+        <div class="coin-btn active" onclick="selectCoin('TON', this)">💎 TON</div>
+        <div class="coin-btn" onclick="selectCoin('SOL', this)">👻 SOL</div>
+        <div class="coin-btn" onclick="selectCoin('ETH', this)">🦊 ETH</div>
+        <div class="coin-btn" onclick="selectCoin('BTC', this)">₿ BTC</div>
+    </div>
+
+    <div class="chart-box">
+        <div class="price-row">
+            <span class="cur-price" id="priceDisplay">$5.50</span>
+            <span class="change up" id="changeDisplay">+0.00%</span>
+        </div>
+        <canvas id="chartCanvas" width="420" height="110"></canvas>
+    </div>
+
+    <div class="msg" id="msgBox">Лови падение цены, покупай и продавай на росте!</div>
+
+    <div class="trade-controls">
+        <button class="btn-buy" onclick="buyAll()">Купить на всё</button>
+        <button class="btn-sell" onclick="sellAll()">Продать всё</button>
+    </div>
+    <button class="reset-btn" onclick="resetGame()">Сбросить баланс до $1,000</button>
 </div>
+
 <script>
-    let net = 'ton';
-    function setNet(n) {
-        net = n;
-        document.getElementById('bTon').className = n === 'ton' ? 'tab active' : 'tab';
-        document.getElementById('bEth').className = n === 'eth' ? 'tab active-eth' : 'tab';
-        document.getElementById('addr').placeholder = n === 'ton' ? 'Адрес TON (UQ... или EQ...)' : 'Адрес Ethereum (0x...)';
-        document.getElementById('res').style.display = 'none';
-        document.getElementById('err').style.display = 'none';
-    }
-    function demo() {
-        document.getElementById('addr').value = net === 'ton' 
-            ? 'EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N' 
-            : '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
+    // Начальные данные монет и сохранение прогресса в браузере
+    let state = JSON.parse(localStorage.getItem('cryptoSimV5')) || {
+        cash: 1000,
+        holdings: { TON: 0, SOL: 0, ETH: 0, BTC: 0 }
+    };
+
+    const market = {
+        TON: { price: 5.50, history: [5.42, 5.45, 5.41, 5.48, 5.52, 5.49, 5.50], vol: 0.015 },
+        SOL: { price: 185.00, history: [182, 184, 183, 186, 185, 184.5, 185], vol: 0.018 },
+        ETH: { price: 3150.00, history:, vol: 0.012 },
+        BTC: { price: 92000.00, history:, vol: 0.010 }
+    };
+
+    let activeCoin = 'TON';
+
+    function saveState() {
+        localStorage.setItem('cryptoSimV5', JSON.stringify(state));
     }
 
-    async function getTonBalance(a) {
-        const urls = [
-            async () => {
-                const r = await (await fetch(`https://toncenter.com{a}`)).json();
-                if (!r.balance) throw 1;
-                return Number(r.balance) / 1e9;
-            },
-            async () => {
-                const r = await (await fetch(`https://tonhubapi.com`)).json();
-                const seqno = r.last.seqno;
-                const acc = await (await fetch(`https://tonhubapi.com{seqno}/${a}/lite`)).json();
-                return Number(acc.account.balance.coins) / 1e9;
-            },
-            async () => {
-                const r = await (await fetch(`https://ton.cat{a}`)).json();
-                return Number(r.balance) / 1e9;
-            }
-        ];
-        for (let fn of urls) {
-            try { 
-                const res = await fn();
-                if (!isNaN(res)) return res;
-            } catch (e) {}
+    function selectCoin(sym, el) {
+        activeCoin = sym;
+        document.querySelectorAll('.coin-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        updateUI();
+    }
+
+    function buyAll() {
+        if (state.cash < 0.01) {
+            showMsg('Нет свободных долларов для покупки!');
+            return;
         }
-        throw new Error('Серверы TON временно недоступны (попробуй вкладку Ethereum!)');
+        const price = market[activeCoin].price;
+        const bought = state.cash / price;
+        state.holdings[activeCoin] += bought;
+        state.cash = 0;
+        saveState();
+        showMsg(`Куплено ${bought.toFixed(4)} ${activeCoin} по $${price.toFixed(2)}`);
+        updateUI();
     }
 
-    async function getEthBalance(a) {
-        const urls = [
-            async () => {
-                const r = await (await fetch(`https://ethplorer.io{a}?apiKey=freekey`)).json();
-                if (r.error || !r.ETH) throw 1;
-                return Number(r.ETH.balance);
-            },
-            async () => {
-                const cleanAddr = a.replace('0x', '');
-                const r = await (await fetch(`https://blockcypher.com{cleanAddr}/balance`)).json();
-                if (typeof r.balance === 'undefined') throw 1;
-                return Number(r.balance) / 1e18;
-            }
-        ];
-        for (let fn of urls) {
-            try { return await fn(); } catch (e) {}
+    function sellAll() {
+        const amt = state.holdings[activeCoin];
+        if (amt <= 0) {
+            showMsg(`У тебя нет монет ${activeCoin} для продажи!`);
+            return;
         }
-        throw new Error('Не удалось загрузить ETH (проверь интернет или AdBlock)');
+        const price = market[activeCoin].price;
+        const gained = amt * price;
+        state.cash += gained;
+        state.holdings[activeCoin] = 0;
+        saveState();
+        showMsg(`Продано! Получено $${gained.toFixed(2)}`);
+        updateUI();
     }
 
-    async function getPrices(sym) {
-        try {
-            const data = await (await fetch(`https://cryptocompare.com{sym}&tsyms=USD,RUB`)).json();
-            if (data.USD) return { usd: data.USD, rub: data.RUB || data.USD * 95 };
-        } catch (e) {}
-        return sym === 'TON' ? { usd: 5.5, rub: 520 } : { usd: 3100, rub: 295000 };
+    function resetGame() {
+        state = { cash: 1000, holdings: { TON: 0, SOL: 0, ETH: 0, BTC: 0 } };
+        saveState();
+        showMsg('Баланс сброшен до $1,000');
+        updateUI();
     }
 
-    async function run() {
-        const a = document.getElementById('addr').value.trim();
-        const err = document.getElementById('err'), res = document.getElementById('res'), btn = document.getElementById('subBtn');
-        err.style.display = 'none'; res.style.display = 'none';
-        if (!a) { err.innerText = 'Введи адрес!'; err.style.display = 'block'; return; }
-        
-        btn.innerText = 'Загрузка...';
-        try {
-            const sym = net === 'ton' ? 'TON' : 'ETH';
-            const bal = net === 'ton' ? await getTonBalance(a) : await getEthBalance(a);
-            const p = await getPrices(sym);
+    function showMsg(text) {
+        const box = document.getElementById('msgBox');
+        box.innerText = text;
+        setTimeout(() => { box.innerText = 'Торгуй на разнице курсов и увеличивай капитал!'; }, 3000);
+    }
 
-            document.getElementById('val').innerText = bal.toFixed(4) + ' ' + sym;
-            document.getElementById('usd').innerText = '$' + (bal * p.usd).toLocaleString('en-US', {maximumFractionDigits: 2});
-            document.getElementById('rub').innerText = Math.round(bal * p.rub).toLocaleString('ru-RU') + ' ₽';
-            res.style.display = 'block';
-        } catch(e) { 
-            err.innerText = 'Ошибка: ' + e.message; 
-            err.style.display = 'block'; 
+    function drawChart(history, isUp) {
+        const canvas = document.getElementById('chartCanvas');
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width, h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const min = Math.min(...history) * 0.998;
+        const max = Math.max(...history) * 1.002;
+        const range = max - min || 1;
+
+        ctx.beginPath();
+        ctx.strokeStyle = isUp ? '#4ade80' : '#f87171';
+        ctx.lineWidth = 3;
+
+        history.forEach((val, i) => {
+            const x = (i / (history.length - 1)) * w;
+            const y = h - ((val - min) / range) * (h - 20) - 10;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+    }
+
+    function updateUI() {
+        const coinData = market[activeCoin];
+        const firstPrice = coinData.history[0];
+        const diffPct = ((coinData.price - firstPrice) / firstPrice) * 100;
+        const isUp = diffPct >= 0;
+
+        document.getElementById('priceDisplay').innerText = '$' + coinData.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const chEl = document.getElementById('changeDisplay');
+        chEl.innerText = (isUp ? '+' : '') + diffPct.toFixed(2) + '%';
+        chEl.className = 'change ' + (isUp ? 'up' : 'down');
+
+        // Считаем общий баланс по всем монетам
+        let coinsValue = 0;
+        for (let s in state.holdings) {
+            coinsValue += state.holdings[s] * market[s].price;
         }
-        btn.innerText = 'Проверить баланс';
+        const total = state.cash + coinsValue;
+
+        document.getElementById('totalEquity').innerText = '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('cashBal').innerText = '$' + state.cash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('coinHold').innerText = `${state.holdings[activeCoin].toFixed(4)} ${activeCoin}`;
+
+        drawChart(coinData.history, isUp);
     }
+
+    // Движение рынка каждую секунду
+    setInterval(() => {
+        for (let s in market) {
+            const m = market[s];
+            const change = (Math.random() - 0.49) * m.vol; // Легкий тренд вверх для азарта
+            m.price = Math.max(0.01, m.price * (1 + change));
+            m.history.push(m.price);
+            if (m.history.length > 35) m.history.shift();
+        }
+        updateUI();
+    }, 1000);
+
+    updateUI();
 </script>
 </body>
 </html>
+м
