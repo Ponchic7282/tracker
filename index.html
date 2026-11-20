@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TON & Ethereum Tracker</title>
+    <title>TON & Ethereum Tracker (RU)</title>
     <style>
         body { font-family: sans-serif; background: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
         .card { background: #161d2f; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #26314d; }
@@ -17,7 +17,7 @@
         .test-btn { width: 100%; padding: 8px; margin-top: 8px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #cbd5e1; font-size: 12px; cursor: pointer; }
         .res { margin-top: 20px; padding: 15px; background: #0f172a; border-radius: 10px; display: none; }
         .row { display: flex; justify-content: space-between; margin-bottom: 8px; }
-        .err { color: #f87171; text-align: center; margin-top: 12px; display: none; font-size: 13px; }
+        .err { color: #f87171; text-align: center; margin-top: 12px; display: none; font-size: 13px; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -50,13 +50,51 @@
     function demo() {
         document.getElementById('addr').value = net === 'ton' 
             ? 'EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N' 
-            : '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // Кошелек Виталика Бутерина (создателя Ethereum)
+            : '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
+    }
+
+    async function getTonBalance(a) {
+        const urls = [
+            async () => {
+                const r = await (await fetch(`https://toncenter.com{a}`)).json();
+                if (!r.ok) throw 1;
+                return Number(r.result) / 1e9;
+            },
+            async () => {
+                const r = await (await fetch(`https://tonapi.io{a}`)).json();
+                if (typeof r.balance === 'undefined') throw 1;
+                return Number(r.balance) / 1e9;
+            }
+        ];
+        for (let fn of urls) {
+            try { return await fn(); } catch (e) {}
+        }
+        throw new Error('Не удалось связаться с TON (отключи AdBlock или проверь адрес)');
+    }
+
+    async function getEthBalance(a) {
+        const rpcs = [
+            'https://llamarpc.com',
+            'https://publicnode.com',
+            'https://1rpc.io',
+            'https://ankr.com'
+        ];
+        for (let url of rpcs) {
+            try {
+                const r = await (await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [a, 'latest'] })
+                })).json();
+                if (r && r.result) return Number(BigInt(r.result)) / 1e18;
+            } catch (e) {}
+        }
+        throw new Error('Не удалось связаться с Ethereum (отключи AdBlock или проверь адрес 0x...)');
     }
 
     async function getPrices(sym) {
         try {
-            const resp = await fetch(`https://cryptocompare.com{sym}&tsyms=USD,RUB`);
-            const data = await resp.json();
+            const data = await (await fetch(`https://cryptocompare.com{sym}&tsyms=USD,RUB`)).json();
             if (data.USD) return { usd: data.USD, rub: data.RUB || data.USD * 95 };
         } catch (e) {}
         return sym === 'TON' ? { usd: 5.5, rub: 520 } : { usd: 3100, rub: 295000 };
@@ -70,27 +108,10 @@
         
         btn.innerText = 'Загрузка...';
         try {
-            let bal = 0, sym = 'TON';
-            if (net === 'ton') {
-                const resp = await fetch(`https://tonapi.io{a}`);
-                const r = await resp.json();
-                if (r.error || typeof r.balance === 'undefined') throw new Error('Неверный адрес TON');
-                bal = Number(r.balance) / 1e9;
-            } else {
-                // Публичный узел Ethereum (работает в РФ без ключа и без CORS)
-                const resp = await fetch('https://publicnode.com', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [a, 'latest'] })
-                });
-                const r = await resp.json();
-                if (!r.result) throw new Error('Неверный адрес Ethereum (должен начинаться с 0x...)');
-                // Переводим из Wei (1 ETH = 10^18 Wei)
-                bal = Number(BigInt(r.result)) / 1e18;
-                sym = 'ETH';
-            }
-
+            const sym = net === 'ton' ? 'TON' : 'ETH';
+            const bal = net === 'ton' ? await getTonBalance(a) : await getEthBalance(a);
             const p = await getPrices(sym);
+
             document.getElementById('val').innerText = bal.toFixed(4) + ' ' + sym;
             document.getElementById('usd').innerText = '$' + (bal * p.usd).toLocaleString('en-US', {maximumFractionDigits: 2});
             document.getElementById('rub').innerText = Math.round(bal * p.rub).toLocaleString('ru-RU') + ' ₽';
