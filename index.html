@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Tracker (GET-Edition)</title>
+    <title>TON & Ethereum Tracker</title>
     <style>
         body { font-family: sans-serif; background: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
         .card { background: #161d2f; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #26314d; }
@@ -22,10 +22,10 @@
 </head>
 <body>
 <div class="card">
-    <h1>🚀 TON & Ethereum Tracker</h1>
+    <h1>🚀 TON & Ethereum Tracker v2</h1>
     <div class="tabs">
         <button id="bTon" class="tab active" onclick="setNet('ton')">💎 TON</button>
-        <button id="bEth" class="tab" onclick="setNet('eth')">🦊 Ethereum / MetaMask</button>
+        <button id="bEth" class="tab" onclick="setNet('eth')">🦊 Ethereum</button>
     </div>
     <input type="text" id="addr" placeholder="Адрес TON (UQ... или EQ...)">
     <button class="btn" id="subBtn" onclick="run()">Проверить баланс</button>
@@ -43,7 +43,7 @@
         net = n;
         document.getElementById('bTon').className = n === 'ton' ? 'tab active' : 'tab';
         document.getElementById('bEth').className = n === 'eth' ? 'tab active-eth' : 'tab';
-        document.getElementById('addr').placeholder = n === 'ton' ? 'Адрес TON (UQ... или EQ...)' : 'Адрес Ethereum / MetaMask (0x...)';
+        document.getElementById('addr').placeholder = n === 'ton' ? 'Адрес TON (UQ... или EQ...)' : 'Адрес Ethereum (0x...)';
         document.getElementById('res').style.display = 'none';
         document.getElementById('err').style.display = 'none';
     }
@@ -53,7 +53,6 @@
             : '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
     }
 
-    // Только простые GET-запросы без CORS-блокировок
     async function getTonBalance(a) {
         const urls = [
             async () => {
@@ -70,18 +69,16 @@
         for (let fn of urls) {
             try { return await fn(); } catch (e) {}
         }
-        throw new Error('Ошибка сети TON (проверь, не блокирует ли антивирус/AdBlock запросы)');
+        throw new Error('Не удалось загрузить TON (проверь интернет или AdBlock)');
     }
 
     async function getEthBalance(a) {
         const urls = [
-            // Бесплатный открытый GET API от Ethplorer (ключ freekey вшит официально)
             async () => {
                 const r = await (await fetch(`https://ethplorer.io{a}?apiKey=freekey`)).json();
                 if (r.error || !r.ETH) throw 1;
                 return Number(r.ETH.balance);
             },
-            // Резервный GET API от Blockcypher
             async () => {
                 const cleanAddr = a.replace('0x', '');
                 const r = await (await fetch(`https://blockcypher.com{cleanAddr}/balance`)).json();
@@ -92,7 +89,7 @@
         for (let fn of urls) {
             try { return await fn(); } catch (e) {}
         }
-        throw new Error('Ошибка сети ETH (попробуй открыть сайт с телефона через мобильный интернет)');
+        throw new Error('Не удалось загрузить ETH (проверь интернет или AdBlock)');
     }
 
     async function getPrices(sym) {
