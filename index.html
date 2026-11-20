@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TON & Ethereum Tracker</title>
+    <title>TON & Ethereum Tracker v3</title>
     <style>
         body { font-family: sans-serif; background: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
         .card { background: #161d2f; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #26314d; }
@@ -22,7 +22,7 @@
 </head>
 <body>
 <div class="card">
-    <h1>🚀 TON & Ethereum Tracker v2</h1>
+    <h1>🚀 TON & Ethereum Tracker v3</h1>
     <div class="tabs">
         <button id="bTon" class="tab active" onclick="setNet('ton')">💎 TON</button>
         <button id="bEth" class="tab" onclick="setNet('eth')">🦊 Ethereum</button>
@@ -57,19 +57,27 @@
         const urls = [
             async () => {
                 const r = await (await fetch(`https://toncenter.com{a}`)).json();
-                if (!r.ok) throw 1;
-                return Number(r.result) / 1e9;
+                if (!r.balance) throw 1;
+                return Number(r.balance) / 1e9;
             },
             async () => {
-                const r = await (await fetch(`https://tonapi.io{a}`)).json();
-                if (typeof r.balance === 'undefined') throw 1;
+                const r = await (await fetch(`https://tonhubapi.com`)).json();
+                const seqno = r.last.seqno;
+                const acc = await (await fetch(`https://tonhubapi.com{seqno}/${a}/lite`)).json();
+                return Number(acc.account.balance.coins) / 1e9;
+            },
+            async () => {
+                const r = await (await fetch(`https://ton.cat{a}`)).json();
                 return Number(r.balance) / 1e9;
             }
         ];
         for (let fn of urls) {
-            try { return await fn(); } catch (e) {}
+            try { 
+                const res = await fn();
+                if (!isNaN(res)) return res;
+            } catch (e) {}
         }
-        throw new Error('Не удалось загрузить TON (проверь интернет или AdBlock)');
+        throw new Error('Серверы TON временно недоступны (попробуй вкладку Ethereum!)');
     }
 
     async function getEthBalance(a) {
