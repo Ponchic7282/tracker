@@ -54,37 +54,35 @@
     }
 
     async function getSolBalance(address) {
-        // 1. Пробуем через публичный REST API Blockdaemon / OnFinality / Solana
-        const endpoints = [
-            {
-                url: 'https://onfinality.io',
-                opts: { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jsonrpc:'2.0', id:1, method:'getBalance', params:[address]}) },
-                parse: d => d.result.value / 1e9
-            },
-            {
-                url: 'https://shyft.to?api_key=free',
-                opts: { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jsonrpc:'2.0', id:1, method:'getBalance', params:[address]}) },
-                parse: d => d.result.value / 1e9
-            },
-            {
-                url: `https://solscan.io{address}`,
-                opts: { method: 'GET' },
-                parse: d => Number(d.data.lamports) / 1e9
-            }
+        // Список рабочих RPC-узлов с поддержкой CORS для GitHub Pages
+        const rpcs = [
+            'https://publicnode.com',
+            'https://solana.com',
+            'https://drpc.org',
+            'https://ankr.com'
         ];
 
-        let lastErr = '';
-        for (let ep of endpoints) {
+        for (let url of rpcs) {
             try {
-                const resp = await fetch(ep.url, ep.opts);
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: 1,
+                        method: 'getBalance',
+                        params: [address]
+                    })
+                });
                 const data = await resp.json();
-                const val = ep.parse(data);
-                if (!isNaN(val)) return val;
+                if (data && data.result && typeof data.result.value === 'number') {
+                    return data.result.value / 1e9;
+                }
             } catch (e) {
-                lastErr = e.message;
+                // Идем к следующему серверу
             }
         }
-        throw new Error('Браузер заблокировал прямой запрос с рабочего стола (' + lastErr + '). Запусти файл через Live Server в VS Code или залей на GitHub Pages!');
+        throw new Error('Серверы Solana сейчас перегружены или недоступны с твоего провайдера. Попробуй через 10 секунд.');
     }
 
     async function getPrices(sym) {
