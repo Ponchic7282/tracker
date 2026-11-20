@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Chain Tracker (RU)</title>
+    <title>TON & Ethereum Tracker</title>
     <style>
         body { font-family: sans-serif; background: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
         .card { background: #161d2f; padding: 25px; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #26314d; }
@@ -11,25 +11,25 @@
         .tabs { display: flex; gap: 8px; margin-bottom: 15px; }
         .tab { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #94a3b8; font-weight: bold; cursor: pointer; }
         .tab.active { background: #0284c7; color: #fff; }
-        .tab.active-sol { background: #7e22ce; color: #fff; }
+        .tab.active-eth { background: #4f46e5; color: #fff; }
         input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; margin-bottom: 12px; }
         .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; background: #0284c7; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; }
         .test-btn { width: 100%; padding: 8px; margin-top: 8px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #cbd5e1; font-size: 12px; cursor: pointer; }
         .res { margin-top: 20px; padding: 15px; background: #0f172a; border-radius: 10px; display: none; }
         .row { display: flex; justify-content: space-between; margin-bottom: 8px; }
-        .err { color: #f87171; text-align: center; margin-top: 12px; display: none; font-size: 13px; line-height: 1.4; }
+        .err { color: #f87171; text-align: center; margin-top: 12px; display: none; font-size: 13px; }
     </style>
 </head>
 <body>
 <div class="card">
-    <h1>🚀 TON & Solana Tracker</h1>
+    <h1>🚀 TON & Ethereum Tracker</h1>
     <div class="tabs">
         <button id="bTon" class="tab active" onclick="setNet('ton')">💎 TON</button>
-        <button id="bSol" class="tab" onclick="setNet('sol')">👻 Solana / Phantom</button>
+        <button id="bEth" class="tab" onclick="setNet('eth')">🦊 Ethereum / MetaMask</button>
     </div>
     <input type="text" id="addr" placeholder="Адрес TON (UQ... или EQ...)">
     <button class="btn" id="subBtn" onclick="run()">Проверить баланс</button>
-    <button class="test-btn" onclick="demo()">Вставить тестовый кошелек</button>
+    <button class="test-btn" onclick="demo()">Вставить тестовый кошелек «кита»</button>
     <div id="err" class="err"></div>
     <div id="res" class="res">
         <div class="row"><span>Баланс:</span><b id="val" style="color:#4ade80">0</b></div>
@@ -42,44 +42,15 @@
     function setNet(n) {
         net = n;
         document.getElementById('bTon').className = n === 'ton' ? 'tab active' : 'tab';
-        document.getElementById('bSol').className = n === 'sol' ? 'tab active-sol' : 'tab';
-        document.getElementById('addr').placeholder = n === 'ton' ? 'Адрес TON (UQ... или EQ...)' : 'Адрес Solana / Phantom';
+        document.getElementById('bEth').className = n === 'eth' ? 'tab active-eth' : 'tab';
+        document.getElementById('addr').placeholder = n === 'ton' ? 'Адрес TON (UQ... или EQ...)' : 'Адрес Ethereum / MetaMask (0x...)';
         document.getElementById('res').style.display = 'none';
         document.getElementById('err').style.display = 'none';
     }
     function demo() {
         document.getElementById('addr').value = net === 'ton' 
             ? 'EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N' 
-            : '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM';
-    }
-
-    // Проверка Solana через открытые REST API без регистрации и ключей
-    async function getSolBalance(address) {
-        const sources = [
-            async () => {
-                const r = await fetch(`https://blockchair.com{address}`);
-                const d = await r.json();
-                return d.data[address].address.balance / 1e9;
-            },
-            async () => {
-                const r = await fetch(`https://solana.fm{address}`);
-                const d = await r.json();
-                return d.result.data.lamports / 1e9;
-            },
-            async () => {
-                const r = await fetch(`https://solscan.io{address}`);
-                const d = await r.json();
-                return d.lamports / 1e9;
-            }
-        ];
-
-        for (let getBal of sources) {
-            try {
-                const bal = await getBal();
-                if (typeof bal === 'number' && !isNaN(bal)) return bal;
-            } catch (e) {}
-        }
-        throw new Error('Не удалось загрузить данные Solana без ключа (попробуй TON или сделай бесплатный ключ на dev.helius.xyz)');
+            : '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // Кошелек Виталика Бутерина (создателя Ethereum)
     }
 
     async function getPrices(sym) {
@@ -88,7 +59,7 @@
             const data = await resp.json();
             if (data.USD) return { usd: data.USD, rub: data.RUB || data.USD * 95 };
         } catch (e) {}
-        return sym === 'TON' ? { usd: 5.5, rub: 520 } : { usd: 180, rub: 17000 };
+        return sym === 'TON' ? { usd: 5.5, rub: 520 } : { usd: 3100, rub: 295000 };
     }
 
     async function run() {
@@ -106,17 +77,26 @@
                 if (r.error || typeof r.balance === 'undefined') throw new Error('Неверный адрес TON');
                 bal = Number(r.balance) / 1e9;
             } else {
-                bal = await getSolBalance(a);
-                sym = 'SOL';
+                // Публичный узел Ethereum (работает в РФ без ключа и без CORS)
+                const resp = await fetch('https://publicnode.com', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [a, 'latest'] })
+                });
+                const r = await resp.json();
+                if (!r.result) throw new Error('Неверный адрес Ethereum (должен начинаться с 0x...)');
+                // Переводим из Wei (1 ETH = 10^18 Wei)
+                bal = Number(BigInt(r.result)) / 1e18;
+                sym = 'ETH';
             }
 
             const p = await getPrices(sym);
             document.getElementById('val').innerText = bal.toFixed(4) + ' ' + sym;
-            document.getElementById('usd').innerText = '$' + (bal * p.usd).toFixed(2);
-            document.getElementById('rub').innerText = Math.round(bal * p.rub) + ' ₽';
+            document.getElementById('usd').innerText = '$' + (bal * p.usd).toLocaleString('en-US', {maximumFractionDigits: 2});
+            document.getElementById('rub').innerText = Math.round(bal * p.rub).toLocaleString('ru-RU') + ' ₽';
             res.style.display = 'block';
         } catch(e) { 
-            err.innerText = e.message; 
+            err.innerText = 'Ошибка: ' + e.message; 
             err.style.display = 'block'; 
         }
         btn.innerText = 'Проверить баланс';
